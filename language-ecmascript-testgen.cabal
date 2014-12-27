@@ -27,5 +27,6 @@ executable language-ecmascript-testgen
                      , parsec == 3.*
                      , data-default-class
                      , text
+                     , scientific
   -- hs-source-dirs:      
   default-language:    Haskell2010
