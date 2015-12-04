@@ -27,8 +27,10 @@ convertFromString s = eitherDecode (fromString s) >>= convert
 
 loc2span :: JS.SourceLocation -> SourceSpan
 loc2span loc =
-  let src = fromMaybe "" (JS.source loc) in
-  SourceSpan (position2sourcePos src (JS.start loc), position2sourcePos src (JS.end loc))
+  case loc of
+   JS.SourceLocation {} -> let src = fromMaybe "" (JS.source loc)
+                        in  SourceSpan (position2sourcePos src (JS.start loc), position2sourcePos src (JS.end loc))
+   JS.NoLocation -> def
 
 position2sourcePos :: String -> JS.Position -> SourcePos
 position2sourcePos source pos =
