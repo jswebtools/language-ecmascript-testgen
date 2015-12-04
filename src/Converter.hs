@@ -2,7 +2,7 @@
 module Converter where
 
 import qualified Language.ECMAScript5.Syntax as ES
-import Language.ECMAScript5.ParserState (SourceSpan(..))
+import Language.ECMAScript5.ParserState (SrcLoc (..))
 import Text.Parsec.Pos (SourcePos, newPos)
 import qualified Language.JavaScript.SpiderMonkey.Parser as JS
 import Data.Aeson
@@ -25,21 +25,21 @@ convertFromString :: String -> CM ES.Program
 convertFromString s = eitherDecode (fromString s) >>= convert
 ---------------------------------
 
-loc2span :: JS.SourceLocation -> SourceSpan
+loc2span :: JS.SourceLocation -> SrcLoc
 loc2span loc =
+  let int32 = fromInteger . toInteger in
   case loc of
-   JS.SourceLocation {} -> let src = fromMaybe "" (JS.source loc)
-                        in  SourceSpan (position2sourcePos src (JS.start loc), position2sourcePos src (JS.end loc))
-   JS.NoLocation -> def
-
-position2sourcePos :: String -> JS.Position -> SourcePos
-position2sourcePos source pos =
-  newPos source (int32 $ JS.line pos) (int32 $ JS.column pos)
-  where int32 = fromInteger . toInteger
+   JS.SourceLocation {} ->
+     SrcLoc (int32 $ JS.line $ JS.start loc
+            ,int32 $ JS.column $ JS.start loc
+            ,int32 $ JS.line $ JS.end loc
+            ,int32 $ JS.column $ JS.end loc
+            ,JS.source loc)
+   JS.NoLocation -> NoLoc
 
 type Reason = String
 
-type CM x = Either Reason (x SourceSpan)
+type CM x = Either Reason (x SrcLoc)
 
 convert :: JS.Program -> CM ES.Program
 convert prg = (ES.Program $ loc2span $ JS.loc prg) <$> traverse statement (JS.body prg)
@@ -88,9 +88,9 @@ fromBlock s = case s of
   _                 -> [s]
 
 function :: JS.Function
-           -> Either Reason (Maybe (ES.Id SourceSpan)
-                            ,[ES.Id SourceSpan]
-                            ,[ES.Statement SourceSpan])
+           -> Either Reason (Maybe (ES.Id SrcLoc)
+                            ,[ES.Id SrcLoc]
+                            ,[ES.Statement SrcLoc])
 function func =
   if ((not $ null (JS.funcDefaults func)) &&
       (isJust $ JS.funcRest func) &&
@@ -139,7 +139,7 @@ expression e = case e of
   JS.IdentifierExpression loc id -> pure $ ES.VarRef (loc2span loc) (identifier id)
   _ -> Left $ "Expression is not in ES5: " ++ (show e)
 
-identifier :: JS.Identifier -> ES.Id SourceSpan
+identifier :: JS.Identifier -> ES.Id SrcLoc
 identifier (JS.Identifier loc name) = ES.Id (loc2span loc) (unpack name)
 
 pattern :: JS.Pattern -> CM ES.Id
@@ -192,7 +192,7 @@ property (JS.Property loc name value kind) =
       JS.PGet  -> ES.PGet span <$> prop <*> (val >>= e2Getter)
       JS.PSet  -> uncurry <$> ((ES.PSet span) <$> prop) <*> (val >>= e2Setter)
 
-literal :: JS.Literal -> ES.Expression SourceSpan
+literal :: JS.Literal -> ES.Expression SrcLoc
 literal l = case l of
   JS.LString loc text -> ES.StringLit (loc2span loc) (unpack text)
   JS.LBool loc b -> ES.BoolLit (loc2span loc) b
