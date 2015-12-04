@@ -35,7 +35,6 @@ position2sourcePos source pos =
   newPos source (int32 $ JS.line pos) (int32 $ JS.column pos)
   where int32 = fromInteger . toInteger
 
-
 type Reason = String
 
 type CM x = Either Reason (x SourceSpan)
@@ -187,7 +186,7 @@ property (JS.Property loc name value kind) =
                     ES.FuncExpr _ Nothing [id] body -> Right $ (id, body)
                     _ -> Left "Invalid setter"
   in case kind of
-      JS.PInit -> ES.PExpr span <$> prop <*> val
+      JS.PInit -> ES.PValue span <$> prop <*> val
       JS.PGet  -> ES.PGet span <$> prop <*> (val >>= e2Getter)
       JS.PSet  -> uncurry <$> ((ES.PSet span) <$> prop) <*> (val >>= e2Setter)
 
