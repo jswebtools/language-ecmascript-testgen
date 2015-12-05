@@ -129,12 +129,12 @@ expression e = case e of
     ES.NewExpr (loc2span loc) <$> expression ctor <*> traverse expression args
   JS.CallExpression loc fun args ->
     ES.CallExpr (loc2span loc) <$> expression fun <*> traverse expression args
-  JS.MemberExpression loc obj idOrExpr ->
+  JS.MemberExpression loc obj idOrExpr computed ->
     let span = loc2span loc
         obj' = expression obj
-    in  case idOrExpr of
-         Left id -> (ES.DotRef span) <$> obj' <*> pure (identifier id)
-         Right e -> (ES.BracketRef span) <$> obj' <*> expression e
+    in  case (computed, idOrExpr) of
+         (False, Left id) -> (ES.DotRef span) <$> obj' <*> pure (identifier id)
+         (True, Right e) -> (ES.BracketRef span) <$> obj' <*> expression e
   JS.LiteralExpression _ lit -> pure (literal lit)
   JS.IdentifierExpression loc id -> pure $ ES.VarRef (loc2span loc) (identifier id)
   _ -> Left $ "Expression is not in ES5: " ++ (show e)
