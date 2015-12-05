@@ -2,6 +2,7 @@
 module Converter where
 
 import qualified Language.ECMAScript5.Syntax as ES
+import Language.ECMAScript5.Syntax.Annotations (getAnnotation)
 import Language.ECMAScript5.ParserState (SrcLoc (..))
 import Text.Parsec.Pos (SourcePos, newPos)
 import qualified Language.JavaScript.SpiderMonkey.Parser as JS
@@ -135,6 +136,9 @@ expression e = case e of
     in  case (computed, idOrExpr) of
          (False, Left id) -> (ES.DotRef span) <$> obj' <*> pure (identifier id)
          (True, Right e) -> (ES.BracketRef span) <$> obj' <*> expression e
+         (True, Left id) -> (ES.BracketRef span) <$> obj' <*>
+                            pure (ES.VarRef (getAnnotation $ identifier id) $ identifier id)
+
   JS.LiteralExpression _ lit -> pure (literal lit)
   JS.IdentifierExpression loc id -> pure $ ES.VarRef (loc2span loc) (identifier id)
   _ -> Left $ "Expression is not in ES5: " ++ (show e)
