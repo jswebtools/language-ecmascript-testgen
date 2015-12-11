@@ -236,7 +236,7 @@ binaryOperator op = case op of
   (JS.:%:)  -> Right ES.OpMod
   (JS.:|:)  -> Right ES.OpBOr
   (JS.:^:)  -> Right ES.OpBXor
-  (JS.:&:)  -> Right ES.OpBOr
+  (JS.:&:)  -> Right ES.OpBAnd
   JS.In     -> Right ES.OpIn
   JS.Instanceof -> Right ES.OpInstanceof
   (JS.:..:)     -> Left "The .. operator is not in ES5"
